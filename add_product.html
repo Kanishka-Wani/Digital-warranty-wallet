@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Product — WarrantyWallet</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+    <div class="logo-text">
+        <div class="logo-icon"><i class="fas fa-shield-alt"></i></div>
+        <span>Warranty<span>Wallet</span></span>
+    </div>
+    <ul class="menu">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="add_product.html" class="active">Add Products</a></li>
+        <li><a href="about.html">About</a></li>
+    </ul>
+    <div class="header-actions">
+        <div class="search" id="searchToggle">
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
+            </svg>
+        </div>
+        <div class="search-overlay" id="searchOverlay">
+            <input type="text" placeholder="Search for products..." />
+        </div>
+        <div class="notification-wrapper" id="notificationToggle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span class="notification-badge" id="notifBadge">3</span>
+        </div>
+        <div class="notification-dropdown" id="notifDropdown">
+            <div class="notif-item" data-id="1">
+                <div class="notif-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="notif-text">Your warranty for <strong>Smartphone X</strong> expires in 5 days.</div>
+                <div class="notif-time">2 min ago</div>
+            </div>
+            <div class="notif-item" data-id="2">
+                <div class="notif-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="notif-text"><strong>Laptop Pro</strong> warranty is about to expire!</div>
+                <div class="notif-time">1 hour ago</div>
+            </div>
+            <div class="notif-item" data-id="3">
+                <div class="notif-icon"><i class="fas fa-clock"></i></div>
+                <div class="notif-text">Reminder: You have 3 products with expiring warranties.</div>
+                <div class="notif-time">Yesterday</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <section class="add-product-section">
+        <div class="section-header">
+            <span class="subtitle">New entry</span>
+            <h2>Add a <span>Product</span></h2>
+            <p>Fill in the details below to store a new warranty in your digital wallet.</p>
+        </div>
+
+        <form id="addProductForm" class="add-product-form" novalidate>
+
+            <!-- Product Images -->
+            <div class="form-group form-group-full">
+                <label class="form-label" for="productImages">
+                    <i class="fas fa-images"></i> Product Images
+                    <span class="file-count" id="productCount">0 / 5</span>
+                </label>
+                <div class="file-upload-area" id="productImagesArea">
+                    <input type="file" id="productImages" name="productImages" accept="image/*" multiple hidden />
+                    <div class="file-upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag &amp; drop product photos here, or <span>browse</span></p>
+                        <small>PNG, JPG, WEBP — up to 5 images</small>
+                    </div>
+                </div>
+                <div class="image-preview-grid" id="productImagesPreview"></div>
+                <button type="button" class="btn-clear-images" id="clearProductImages" style="display:none;">
+                    <i class="fas fa-trash-alt"></i> Clear all images
+                </button>
+            </div>
+
+            <!-- Invoice Image -->
+            <div class="form-group form-group-full">
+                <label class="form-label" for="invoiceImage">
+                    <i class="fas fa-file-invoice"></i> Invoice / Bill Image
+                    <span class="file-count" id="invoiceCount">0 / 1</span>
+                </label>
+                <div class="file-upload-area file-upload-single" id="invoiceImageArea">
+                    <input type="file" id="invoiceImage" name="invoiceImage" accept="image/*" hidden />
+                    <div class="file-upload-content">
+                        <i class="fas fa-receipt"></i>
+                        <p>Upload your purchase invoice or bill — <span>browse</span></p>
+                        <small>PNG, JPG, WEBP — 1 file</small>
+                    </div>
+                </div>
+                <div class="image-preview-grid" id="invoiceImagePreview"></div>
+            </div>
+
+            <!-- Product & Brand -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="productName">
+                        <i class="fas fa-box"></i> Product Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="productName" name="productName" class="form-input" placeholder="e.g. Samsung Galaxy S24" required />
+                    <div class="invalid-feedback">Please enter a product name.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="brandName">
+                        <i class="fas fa-tag"></i> Brand Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="brandName" name="brandName" class="form-input" placeholder="e.g. Samsung" required />
+                    <div class="invalid-feedback">Please enter a brand name.</div>
+                </div>
+            </div>
+
+            <!-- Retailer & Purchase Date -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="retailerName">
+                        <i class="fas fa-store"></i> Retailer Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="retailerName" name="retailerName" class="form-input" placeholder="e.g. Amazon, Best Buy" required />
+                    <div class="invalid-feedback">Please enter a retailer name.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="purchaseDate">
+                        <i class="fas fa-calendar-alt"></i> Purchase Date <span class="required">*</span>
+                    </label>
+                    <input type="date" id="purchaseDate" name="purchaseDate" class="form-input" required />
+                    <div class="invalid-feedback">Please select a purchase date.</div>
+                </div>
+            </div>
+
+            <!-- Warranty Period -->
+            <div class="form-group">
+                <label class="form-label" for="warrantyPeriod">
+                    <i class="fas fa-clock"></i> Warranty Period <span class="required">*</span>
+                </label>
+                <div class="warranty-input-group">
+                    <input type="number" id="warrantyPeriod" name="warrantyPeriod" class="form-input warranty-period-input" placeholder="e.g. 12" min="1" required />
+                    <select id="warrantyUnit" name="warrantyUnit" class="form-input form-select" aria-label="Warranty unit">
+                        <option value="months">Months</option>
+                        <option value="years">Years</option>
+                    </select>
+                </div>
+                <div class="invalid-feedback">Please enter a valid warranty period (minimum 1).</div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="reset" class="btn btn-secondary" id="resetForm">
+                    <i class="fas fa-undo-alt"></i> Reset
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+            </div>
+
+        </form>
+    </section>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-col brand-col">
+                <div class="footer-logo">
+                    <div class="logo-icon"><i class="fas fa-shield-alt"></i></div>
+                    <span>Warranty<span>Wallet</span></span>
+                </div>
+                <p class="footer-desc">The smartest way to store, track, and manage all your product warranties in one digital place.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="https://github.com/kanishka-wani" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/kanishka-wani-2520a5288" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                    <li><a href="products.html"><i class="fas fa-chevron-right"></i> My Items</a></li>
+                    <li><a href="add_product.html"><i class="fas fa-chevron-right"></i> Add Product</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-container">
+                <p>&copy; 2026 Digital Warranty Wallet. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+</main>
+
+<!-- ===== External Script ===== -->
+<script src="script.js"></script>
+
+</body>
+</html>
