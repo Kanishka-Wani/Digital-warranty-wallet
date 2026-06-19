@@ -1,15 +1,9 @@
-/**
- * ============================================================
- * script.js — WarrantyWallet
- * ============================================================
- */
 
 (function() {
     'use strict';
-
-    // ============================================================
+    
     // 1. SLIDER (Home page)
-    // ============================================================
+  
     function initSlider() {
         const slides = document.querySelectorAll('.hero-slide');
         const dots = document.querySelectorAll('.dot');
@@ -64,7 +58,7 @@
 
         dots.forEach(function(dot) {
             dot.addEventListener('click', function() {
-                var index = parseInt(this.getAttribute('data-index'), 10);
+                let index = parseInt(this.getAttribute('data-index'), 10);
                 if (!isNaN(index) && index !== currentIndex) {
                     stopAutoPlay();
                     goToSlide(index);
@@ -73,7 +67,7 @@
             });
         });
 
-        var hero = document.querySelector('.hero-section');
+        let hero = document.querySelector('.hero-section');
         if (hero) {
             hero.addEventListener('mouseenter', stopAutoPlay);
             hero.addEventListener('mouseleave', startAutoPlay);
@@ -81,10 +75,7 @@
 
         startAutoPlay();
     }
-
-    // ============================================================
     // 2. HEADER: SEARCH TOGGLE (Shared)
-    // ============================================================
     function initSearch() {
         const searchToggle = document.getElementById('searchToggle');
         const searchOverlay = document.getElementById('searchOverlay');
@@ -104,10 +95,7 @@
             }
         });
     }
-
-    // ============================================================
     // 3. HEADER: NOTIFICATION TOGGLE (Shared)
-    // ============================================================
     function initNotifications() {
         const notifToggle = document.getElementById('notificationToggle');
         const notifDropdown = document.getElementById('notifDropdown');
@@ -118,7 +106,7 @@
         notifToggle.addEventListener('click', function(e) {
             e.stopPropagation();
             notifDropdown.classList.toggle('active');
-            var searchOverlay = document.getElementById('searchOverlay');
+           let searchOverlay = document.getElementById('searchOverlay');
             if (searchOverlay) searchOverlay.classList.remove('active');
         });
 
@@ -129,11 +117,11 @@
         });
 
         // Click on notification item: remove it and update badge
-        var notifItems = notifDropdown.querySelectorAll('.notif-item');
+        let notifItems = notifDropdown.querySelectorAll('.notif-item');
         notifItems.forEach(function(item) {
             item.addEventListener('click', function() {
                 this.remove();
-                var remaining = notifDropdown.querySelectorAll('.notif-item').length;
+                let remaining = notifDropdown.querySelectorAll('.notif-item').length;
                 if (remaining === 0) {
                     if (notifBadge) notifBadge.style.display = 'none';
                 } else {
@@ -144,21 +132,20 @@
         });
     }
 
-    // ============================================================
     // 4. ADD PRODUCT FORM
-    // ============================================================
+    
     function initAddProductForm() {
-        var form = document.getElementById('addProductForm');
+        let form = document.getElementById('addProductForm');
         if (!form) return; // Not on add product page
 
         // ---- File Upload Setup ----
         function setupFileUpload(areaId, inputId, previewId, countId, maxFiles, clearBtnId) {
-            var area = document.getElementById(areaId);
-            var input = document.getElementById(inputId);
-            var preview = document.getElementById(previewId);
-            var countEl = document.getElementById(countId);
-            var clearBtn = document.getElementById(clearBtnId);
-            var files = [];
+            let area = document.getElementById(areaId);
+            let input = document.getElementById(inputId);
+            let preview = document.getElementById(previewId);
+            let countEl = document.getElementById(countId);
+            let clearBtn = document.getElementById(clearBtnId);
+            let files = [];
 
             if (!area || !input || !preview) return null;
 
@@ -182,7 +169,7 @@
             });
 
             function handleFiles(fileList) {
-                var incoming = Array.from(fileList).filter(function(f) {
+                let incoming = Array.from(fileList).filter(function(f) {
                     return f.type.startsWith('image/');
                 });
                 if (maxFiles === 1) {
@@ -203,9 +190,9 @@
                 if (clearBtn) clearBtn.style.display = 'inline-flex';
 
                 files.forEach(function(file, index) {
-                    var reader = new FileReader();
+                    let reader = new FileReader();
                     reader.onload = function(e) {
-                        var item = document.createElement('div');
+                        let item = document.createElement('div');
                         item.className = 'preview-item';
                         item.innerHTML = [
                             '<img src="' + e.target.result + '" alt="Preview" />',
@@ -250,17 +237,17 @@
             };
         }
 
-        var productUpload = setupFileUpload(
+        let productUpload = setupFileUpload(
             'productImagesArea', 'productImages',
             'productImagesPreview', 'productCount', 5, 'clearProductImages'
         );
-        var invoiceUpload = setupFileUpload(
+        let invoiceUpload = setupFileUpload(
             'invoiceImageArea', 'invoiceImage',
             'invoiceImagePreview', 'invoiceCount', 1, null
         );
 
         // ---- Warranty Input: block non-numeric ----
-        var warrantyInput = document.getElementById('warrantyPeriod');
+        let warrantyInput = document.getElementById('warrantyPeriod');
         if (warrantyInput) {
             warrantyInput.addEventListener('input', function() {
                 if (this.value < 1 && this.value !== '') this.value = '';
@@ -268,7 +255,7 @@
         }
 
         // ---- Real-time validation feedback ----
-        var formInputs = form.querySelectorAll('.form-input');
+        let formInputs = form.querySelectorAll('.form-input');
         formInputs.forEach(function(input) {
             input.addEventListener('blur', function() {
                 if (this.hasAttribute('required')) {
@@ -291,7 +278,7 @@
 
         // ---- Save to LocalStorage ----
         function saveProduct(data) {
-            var products = JSON.parse(localStorage.getItem('warrantyProducts') || '[]');
+            let products = JSON.parse(localStorage.getItem('warrantyProducts') || '[]');
             data.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
             data.createdAt = new Date().toISOString();
             products.push(data);
@@ -308,7 +295,7 @@
             }
 
             // Gather form data
-            var productData = {
+            let productData = {
                 productName: document.getElementById('productName').value.trim(),
                 brandName: document.getElementById('brandName').value.trim(),
                 retailerName: document.getElementById('retailerName').value.trim(),
@@ -340,7 +327,7 @@
         });
 
         // ---- Reset Button ----
-        var resetBtn = document.getElementById('resetForm');
+        let resetBtn = document.getElementById('resetForm');
         if (resetBtn) {
             resetBtn.addEventListener('click', function(e) {
                 e.preventDefault();
