@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WarrantyWallet — Digital Warranty Manager</title>
+    <title>Products — WarrantyWallet Dashboard</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -56,64 +55,80 @@
 
 <main class="main-content">
 
-    <!-- ===== HERO / SLIDER ===== -->
-    <section class="hero-section">
-        <div class="hero-slides">
-            <div class="hero-slide hero-slide-1 active"></div>
-            <div class="hero-slide hero-slide-2"></div>
-            <div class="hero-slide hero-slide-3"></div>
-            <div class="hero-slide hero-slide-4"></div>
+    <!-- ===== DASHBOARD HEADER ===== -->
+    <section class="dashboard-header">
+        <div class="dashboard-title">
+            <h1>My <span>Warranties</span></h1>
+            <p>View and manage all your product warranties in one place.</p>
         </div>
-
-        <div class="hero-content">
-            <div class="hero-content-inner">
-                <span class="tag">
-                    <i class="fas fa-shield-alt"></i> Smart Warranty Management
-                </span>
-                <h1>Your Digital <span>Warranty</span> Wallet</h1>
-                <p>Store, track, and manage all your product warranties in one place. Never miss an expiry date again.</p>
-                <div class="hero-buttons">
-                    <a href="add.html" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
-                    <a href="products.html" class="btn btn-outline"><i class="fas fa-arrow-right"></i> Explore</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="slider-arrows">
-            <button id="prevSlide" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
-            <button id="nextSlide" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="slider-dots">
-            <button class="dot active" data-index="0" aria-label="Slide 1"></button>
-            <button class="dot" data-index="1" aria-label="Slide 2"></button>
-            <button class="dot" data-index="2" aria-label="Slide 3"></button>
-            <button class="dot" data-index="3" aria-label="Slide 4"></button>
+        <div class="dashboard-actions">
+            <a href="add.html" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Product
+            </a>
         </div>
     </section>
 
-    <!-- ===== HOW IT WORKS ===== -->
-    <section class="section how-it-works">
-        <div class="section-header">
-            <span class="subtitle">Simple workflow</span>
-            <h2>How <span>Warranty Wallet</span> works</h2>
-            <p>Three easy steps to keep your warranties organised and accessible.</p>
+    <!-- ===== STATS CARDS ===== -->
+    <section class="dashboard-stats">
+        <div class="stat-card stat-total">
+            <div class="stat-icon"><i class="fas fa-boxes"></i></div>
+            <div class="stat-info">
+                <span class="stat-number" id="totalProducts">0</span>
+                <span class="stat-label">Total Products</span>
+            </div>
         </div>
-        <div class="steps-grid">
-            <div class="step-card">
-                <div class="step-icon"><i class="fas fa-plus-circle"></i></div>
-                <h3>1. Add Product</h3>
-                <p>Enter product name, brand, purchase date, warranty duration, and optionally upload a bill image.</p>
+        <div class="stat-card stat-active">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info">
+                <span class="stat-number" id="activeProducts">0</span>
+                <span class="stat-label">Active Warranties</span>
             </div>
-            <div class="step-card">
-                <div class="step-icon"><i class="fas fa-save"></i></div>
-                <h3>2. Auto‑Save</h3>
-                <p>Data is stored securely in your browser's LocalStorage. Expiry date is calculated automatically.</p>
+        </div>
+        <div class="stat-card stat-expiring">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-info">
+                <span class="stat-number" id="expiringProducts">0</span>
+                <span class="stat-label">Expiring Soon (≤30 days)</span>
             </div>
-            <div class="step-card">
-                <div class="step-icon"><i class="fas fa-chart-pie"></i></div>
-                <h3>3. Track &amp; Manage</h3>
-                <p>View all products, expiry status, and receive notifications for warranties expiring soon.</p>
+        </div>
+        <div class="stat-card stat-expired">
+            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+            <div class="stat-info">
+                <span class="stat-number" id="expiredProducts">0</span>
+                <span class="stat-label">Expired Warranties</span>
             </div>
+        </div>
+    </section>
+
+    <!-- ===== PRODUCT GRID ===== -->
+    <section class="products-grid-section">
+        <div class="products-toolbar">
+            <div class="products-filter">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="active">Active</button>
+                <button class="filter-btn" data-filter="expiring">Expiring Soon</button>
+                <button class="filter-btn" data-filter="expired">Expired</button>
+            </div>
+            <div class="products-sort">
+                <select id="sortProducts" class="form-input form-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="expiring">Expiring Soon</option>
+                    <option value="name">Alphabetical (A-Z)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="products-grid" id="productsGrid">
+            <!-- Products will be rendered here by JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="products-empty" id="productsEmpty" style="display:none;">
+            <i class="fas fa-box-open"></i>
+            <h3>No products yet</h3>
+            <p>Start by adding your first warranty product.</p>
+            <a href="add.html" class="btn btn-primary"><i class="fas fa-plus"></i> Add Your First Product</a>
         </div>
     </section>
 
@@ -130,6 +145,7 @@
                     <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
                     <a href="https://github.com/kanishka-wani" aria-label="GitHub"><i class="fab fa-github"></i></a>
                     <a href="https://www.linkedin.com/in/kanishka-wani-2520a5288" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
                 </div>
             </div>
             <div class="footer-col">
