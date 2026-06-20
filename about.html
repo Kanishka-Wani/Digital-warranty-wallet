@@ -17,46 +17,186 @@
 
 <!-- ===== HEADER ===== -->
 <header>
-    <div class="logo-text">
-        <div class="logo-icon"><i class="fas fa-shield-alt"></i></div>
+    <div class="brand-logo">
+        <div class="brand-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
         <span>Warranty<span>Wallet</span></span>
     </div>
-    <ul class="menu">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="products.html">Products</a></li>
-        <li><a href="add.html">Add Products</a></li>
-        <li><a href="about.html" class="active">About</a></li>
-    </ul>
+
+    <nav class="primary-nav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="products.html">Products</a></li>
+            <li><a href="add.html">Add Products</a></li>
+            <li><a href="about.html" class="active">About</a></li>
+        </ul>
+    </nav>
+
+    <div class="header-tools">
+        <div class="search-trigger" id="searchToggle">
+            <i class="fas fa-search"></i>
+        </div>
+        <div class="search-overlay" id="searchOverlay">
+            <input type="text" placeholder="Search for products..." />
+        </div>
+
+        <div class="notification-trigger" id="notificationToggle">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notifBadge">0</span>
+        </div>
+
+        <div class="notification-panel" id="notifDropdown">
+            <div id="notificationList"></div>
+            <div class="notification-empty" id="notificationEmpty" style="display:none;">
+                <i class="fas fa-check-circle"></i>
+                <p>All caught up! No expiring warranties.</p>
+            </div>
+        </div>
+    </div>
 </header>
 
-<!-- ===== MAIN ===== -->
+<!-- ===== MAIN CONTENT ===== -->
 <main class="main-content">
 
-    <section class="about-simple">
-        <h1>About <span>WarrantyWallet</span></h1>
-        <p>
-            WarrantyWallet helps you store, track, and manage all your product warranties in one place.
-            Never miss an expiry date again.
-        </p>
-        <p>
-            Built by <strong>Kanishka Wani</strong> – simple, secure, and free to use.
-        </p>
-        <div class="about-links">
-            <a href="https://github.com/kanishka-wani" target="_blank"><i class="fab fa-github"></i> GitHub</a>
-            <a href="https://www.linkedin.com/in/kanishka-wani-2520a5288" target="_blank"><i class="fab fa-linkedin-in"></i> LinkedIn</a>
+    <!-- ===== ABOUT HERO ===== -->
+    <section class="about-hero">
+        <div class="about-hero-content">
+            <span class="section-badge">About Us</span>
+            <h1>Your Digital <span>Warranty</span> Companion</h1>
+            <p>We believe that managing warranties shouldn't be a headache. WarrantyWallet was created to simplify the way you track and protect your valuable purchases.</p>
         </div>
     </section>
 
-</main>
-
-<!-- ===== FOOTER ===== -->
-<footer class="main-footer">
-    <div class="footer-bottom">
-        <div class="footer-bottom-container">
-            <p>&copy; 2026 WarrantyWallet. All rights reserved.</p>
+    <!-- ===== STORY SECTION – FULL WIDTH (no illustration) ===== -->
+    <section class="about-story">
+        <div class="story-text-full">
+            <h2>Why <span>WarrantyWallet</span>?</h2>
+            <p>
+                Every year, millions of people lose track of their product warranties, missing out on free repairs and replacements.
+                WarrantyWallet was built to solve this problem — a simple, secure, and beautiful way to store all your warranty information in one place.
+            </p>
+            <p>
+                Whether it's your smartphone, laptop, or home appliance, we make sure you never miss an expiry date again.
+                With automatic reminders and a clean dashboard, staying on top of your warranties has never been easier.
+            </p>
         </div>
-    </div>
-</footer>
+    </section>
+
+    <!-- ===== FEATURES SECTION ===== -->
+    <section class="about-features">
+        <div class="section-header">
+            <span class="section-badge">What We Offer</span>
+            <h2>Built to <span>Simplify</span> Your Life</h2>
+            <p>Everything you need to manage your warranties, all in one place.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper"><i class="fas fa-cloud-upload-alt"></i></div>
+                <h3>Digital Storage</h3>
+                <p>Store all your warranty documents and receipts securely in the cloud. Access them anytime, anywhere.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper"><i class="fas fa-bell"></i></div>
+                <h3>Smart Reminders</h3>
+                <p>Never miss an expiry date again. Get automatic notifications when your warranty is about to end.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper"><i class="fas fa-chart-line"></i></div>
+                <h3>Insightful Dashboard</h3>
+                <p>Get a clear overview of all your warranties, their status, and upcoming renewals at a glance.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper"><i class="fas fa-mobile-alt"></i></div>
+                <h3>Works Anywhere</h3>
+                <p>Fully responsive design that works on desktop, tablet, and mobile. Your warranties follow you everywhere.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TEAM SECTION ===== -->
+    <section class="about-team">
+        <div class="section-header">
+            <span class="section-badge">Meet the Team</span>
+            <h2>Built with <span>Passion</span></h2>
+            <p>A small team dedicated to making warranty management effortless.</p>
+        </div>
+
+        <div class="team-grid">
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3>Kanishka Wani</h3>
+                <p class="team-role">Founder &amp; Developer</p>
+                <p class="team-bio">Passionate about building simple, elegant solutions that make everyday life easier.</p>
+                <div class="team-social-links">
+                    <a href="https://github.com/kanishka-wani" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/kanishka-wani-2520a5288" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3>Yash Patil</h3>
+                <p class="team-role">Developer </p>
+                <p class="team-bio">Passionate about building simple, elegant solutions that make everyday life easier.</p>
+                <div class="team-social-links">
+                    <a href="" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CALL TO ACTION ===== -->
+    <section class="about-cta-section">
+        <div class="cta-box">
+            <h2>Ready to get <span>organised</span>?</h2>
+            <p>Start managing your warranties the smart way. Add your first product today.</p>
+            <a href="add.html" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Your First Product
+            </a>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="main-footer">
+        <div class="footer-grid">
+            <div class="footer-brand-column">
+                <div class="footer-brand-logo">
+                    <div class="brand-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+                    <span>Warranty<span>Wallet</span></span>
+                </div>
+                <p class="footer-description">The smartest way to store, track, and manage all your product warranties in one digital place.</p>
+                <div class="footer-social-icons">
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="https://github.com/kanishka-wani" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/kanishka-wani-2520a5288" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-links-column">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html"><i class="fas fa-chevron-right"></i> Home</a></li>
+                    <li><a href="products.html"><i class="fas fa-chevron-right"></i> My Items</a></li>
+                    <li><a href="add.html"><i class="fas fa-chevron-right"></i> Add Product</a></li>
+                    <li><a href="about.html"><i class="fas fa-chevron-right"></i> About</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom-bar">
+            <p>&copy; 2026 Digital Warranty Wallet. All rights reserved.</p>
+        </div>
+    </footer>
+
+</main>
 
 <script src="script.js"></script>
 
