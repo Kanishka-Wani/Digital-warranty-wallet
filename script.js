@@ -10,19 +10,41 @@
 
     function getUserProductsKey() {
         const user = getCurrentUser();
-        return user ? 'warrantyProducts_' + user.email : 'warrantyProducts_public';
+        return user ? 'warrantyProducts_' + user.email : null;
     }
 
     function getUserProducts() {
-        return JSON.parse(localStorage.getItem(getUserProductsKey()) || '[]');
+        const key = getUserProductsKey();
+        if (!key) return [];
+        return JSON.parse(localStorage.getItem(key) || '[]');
     }
 
     function saveUserProducts(products) {
-        localStorage.setItem(getUserProductsKey(), JSON.stringify(products));
+        const key = getUserProductsKey();
+        if (!key) return;
+        localStorage.setItem(key, JSON.stringify(products));
     }
 
     function isLoggedIn() {
         return !!getCurrentUser();
+    }
+
+    function isProtectedPage() {
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        const publicPages = ['index.html', 'about.html', ''];
+        return !publicPages.includes(currentPage);
+    }
+
+    function openSignInModal() {
+        const signinModal = document.getElementById('signinModal');
+        const overlay = document.getElementById('authOverlay');
+        if (signinModal && overlay) {
+            const registerModal = document.getElementById('registerModal');
+            if (registerModal) registerModal.classList.remove('active');
+            signinModal.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     // ============================================================
@@ -103,6 +125,8 @@
     // 2. SEARCH (user-specific)
     // ============================================================
     function initSearch() {
+        if (!isLoggedIn()) return;
+
         const searchToggle = document.getElementById('searchToggle');
         const searchOverlay = document.getElementById('searchOverlay');
         const searchInput = searchOverlay ? searchOverlay.querySelector('input') : null;
@@ -300,6 +324,8 @@
     }
 
     function initNotifications() {
+        if (!isLoggedIn()) return;
+
         const notifToggle = document.getElementById('notificationToggle');
         const notifDropdown = document.getElementById('notifDropdown');
         if (!notifToggle || !notifDropdown) return;
@@ -325,6 +351,8 @@
     // 4. ADD PRODUCT FORM (user-specific save)
     // ============================================================
     function initAddProductForm() {
+        if (!isLoggedIn()) return;
+
         var form = document.getElementById('addProductForm');
         if (!form) return;
 
@@ -497,6 +525,8 @@
     // 5. PRODUCTS DASHBOARD (user-specific)
     // ============================================================
     function loadDashboard() {
+        if (!isLoggedIn()) return;
+
         const grid = document.getElementById('productsGrid');
         const empty = document.getElementById('productsEmpty');
         const totalEl = document.getElementById('totalProducts');
@@ -621,6 +651,8 @@
     }
 
     function initDashboardControls() {
+        if (!isLoggedIn()) return;
+
         const filterBtns = document.querySelectorAll('.filter-btn');
         const sortSelect = document.getElementById('sortProducts');
         if (!filterBtns.length && !sortSelect) return;
@@ -663,54 +695,55 @@
         const logoutBtn = document.getElementById('logoutBtn');
 
         function openModal(modal) {
+            if (!modal || !overlay) return;
             modal.classList.add('active');
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeAllModals() {
-            signinModal.classList.remove('active');
-            registerModal.classList.remove('active');
-            overlay.classList.remove('active');
+            if (signinModal) signinModal.classList.remove('active');
+            if (registerModal) registerModal.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
             document.body.style.overflow = '';
             updateAuthBlocker();
         }
 
         function checkAuthState() {
             const user = getCurrentUser();
-            if (user) {
+            if (user && authButtons && profileContainer && profileInitials && profileName && profileEmail) {
                 authButtons.style.display = 'none';
                 profileContainer.style.display = 'block';
                 const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                 profileInitials.textContent = initials;
                 profileName.textContent = user.name;
                 profileEmail.textContent = user.email;
-            } else {
+            } else if (authButtons && profileContainer) {
                 authButtons.style.display = 'flex';
                 profileContainer.style.display = 'none';
             }
         }
 
-        // ---- Profile Dropdown ----
-        profileAvatar.addEventListener('click', function(e) {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('active');
-        });
+        if (profileAvatar && profileDropdown) {
+            profileAvatar.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('active');
+            });
 
-        document.addEventListener('click', function(e) {
-            if (!profileContainer.contains(e.target)) {
-                profileDropdown.classList.remove('active');
-            }
-        });
+            document.addEventListener('click', function(e) {
+                if (profileContainer && !profileContainer.contains(e.target)) {
+                    profileDropdown.classList.remove('active');
+                }
+            });
+        }
 
-        // ---- Open/Close Modals ----
-        if (signinBtn) {
+        if (signinBtn && signinModal) {
             signinBtn.addEventListener('click', function() {
                 closeAllModals();
                 openModal(signinModal);
             });
         }
-        if (registerBtn) {
+        if (registerBtn && registerModal) {
             registerBtn.addEventListener('click', function() {
                 closeAllModals();
                 openModal(registerModal);
@@ -718,16 +751,16 @@
         }
         if (closeSignin) closeSignin.addEventListener('click', closeAllModals);
         if (closeRegister) closeRegister.addEventListener('click', closeAllModals);
-        overlay.addEventListener('click', closeAllModals);
+        if (overlay) overlay.addEventListener('click', closeAllModals);
 
-        if (switchToRegister) {
+        if (switchToRegister && registerModal) {
             switchToRegister.addEventListener('click', function(e) {
                 e.preventDefault();
                 closeAllModals();
                 openModal(registerModal);
             });
         }
-        if (switchToSignin) {
+        if (switchToSignin && signinModal) {
             switchToSignin.addEventListener('click', function(e) {
                 e.preventDefault();
                 closeAllModals();
@@ -735,71 +768,76 @@
             });
         }
 
-        // ---- Sign In ----
-        signinForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('signinEmail').value.trim();
-            const password = document.getElementById('signinPassword').value;
-            const users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
-            const user = users.find(function(u) { return u.email === email && u.password === password; });
+        if (signinForm) {
+            signinForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('signinEmail').value.trim();
+                const password = document.getElementById('signinPassword').value;
+                const users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
+                const user = users.find(function(u) { return u.email === email && u.password === password; });
 
-            if (user) {
-                localStorage.setItem('warrantyUser', JSON.stringify({ name: user.name, email: user.email }));
+                if (user) {
+                    localStorage.setItem('warrantyUser', JSON.stringify({ name: user.name, email: user.email }));
+                    closeAllModals();
+                    checkAuthState();
+                    updateAuthBlocker();
+                    location.reload();
+                    signinForm.reset();
+                } else {
+                    alert('❌ Invalid email or password. Please try again.');
+                }
+            });
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('registerName').value.trim();
+                const email = document.getElementById('registerEmail').value.trim();
+                const password = document.getElementById('registerPassword').value;
+                const confirm = document.getElementById('registerConfirm').value;
+
+                if (password !== confirm) {
+                    alert('❌ Passwords do not match.');
+                    return;
+                }
+                if (password.length < 6) {
+                    alert('❌ Password must be at least 6 characters.');
+                    return;
+                }
+
+                let users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
+                if (users.some(function(u) { return u.email === email; })) {
+                    alert('❌ An account with this email already exists.');
+                    return;
+                }
+
+                const newUser = { name, email, password };
+                users.push(newUser);
+                localStorage.setItem('warrantyUsers', JSON.stringify(users));
+                localStorage.setItem('warrantyUser', JSON.stringify({ name, email }));
                 closeAllModals();
                 checkAuthState();
                 updateAuthBlocker();
-                // Reload to refresh the page (removes blocker, shows content)
+                alert('✅ Account created! Welcome, ' + name + '!');
                 location.reload();
-                signinForm.reset();
-            } else {
-                alert('❌ Invalid email or password. Please try again.');
-            }
-        });
+                registerForm.reset();
+            });
+        }
 
-        // ---- Register ----
-        registerForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('registerName').value.trim();
-            const email = document.getElementById('registerEmail').value.trim();
-            const password = document.getElementById('registerPassword').value;
-            const confirm = document.getElementById('registerConfirm').value;
-
-            if (password !== confirm) {
-                alert('❌ Passwords do not match.');
-                return;
-            }
-            if (password.length < 6) {
-                alert('❌ Password must be at least 6 characters.');
-                return;
-            }
-
-            let users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
-            if (users.some(function(u) { return u.email === email; })) {
-                alert('❌ An account with this email already exists.');
-                return;
-            }
-
-            const newUser = { name, email, password };
-            users.push(newUser);
-            localStorage.setItem('warrantyUsers', JSON.stringify(users));
-            localStorage.setItem('warrantyUser', JSON.stringify({ name, email }));
-            closeAllModals();
-            checkAuthState();
-            updateAuthBlocker();
-            alert('✅ Account created! Welcome, ' + name + '!');
-            location.reload();
-            registerForm.reset();
-        });
-
-        // ---- Logout ----
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('warrantyUser');
-            profileDropdown.classList.remove('active');
-            checkAuthState();
-            updateAuthBlocker();
-            // Reload to show blocker on protected pages
-            location.reload();
-        });
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                localStorage.removeItem('warrantyUser');
+                if (profileDropdown) profileDropdown.classList.remove('active');
+                checkAuthState();
+                updateAuthBlocker();
+                if (isProtectedPage()) {
+                    location.href = 'index.html';
+                } else {
+                    location.reload();
+                }
+            });
+        }
 
         checkAuthState();
 
@@ -850,25 +888,22 @@
         `;
         document.body.appendChild(blocker);
 
-        // Event for the blocker's Sign In button – opens the sign-in modal
         document.getElementById('blockerSigninBtn').addEventListener('click', function() {
-            const signinModal = document.getElementById('signinModal');
-            const overlay = document.getElementById('authOverlay');
-            if (signinModal && overlay) {
-                signinModal.classList.add('active');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
+            openSignInModal();
         });
 
-        // Hide all other content: set body's children visibility to hidden except blocker
+        const keepVisibleIds = ['authBlocker', 'signinModal', 'registerModal', 'authOverlay'];
         const bodyChildren = document.body.children;
         for (let i = 0; i < bodyChildren.length; i++) {
             const child = bodyChildren[i];
-            if (child.id !== 'authBlocker') {
+            if (!keepVisibleIds.includes(child.id)) {
                 child.style.display = 'none';
             }
         }
+
+        [document.getElementById('signinModal'), document.getElementById('registerModal'), document.getElementById('authOverlay')].forEach(function(el) {
+            if (el) el.style.zIndex = '1000000';
+        });
 
         // Prevent scrolling
         document.body.style.overflow = 'hidden';
@@ -883,8 +918,12 @@
         const bodyChildren = document.body.children;
         for (let i = 0; i < bodyChildren.length; i++) {
             const child = bodyChildren[i];
-            child.style.display = ''; // reset to default
+            child.style.display = '';
         }
+
+        [document.getElementById('signinModal'), document.getElementById('registerModal'), document.getElementById('authOverlay')].forEach(function(el) {
+            if (el) el.style.zIndex = '';
+        });
 
         // Restore scrolling
         document.body.style.overflow = '';
@@ -892,11 +931,7 @@
     }
 
     function updateAuthBlocker() {
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        const publicPages = ['index.html', 'about.html', ''];
-        const isProtected = !publicPages.includes(currentPage);
-
-        if (isProtected && !isLoggedIn()) {
+        if (isProtectedPage() && !isLoggedIn()) {
             createAuthBlocker();
         } else {
             removeAuthBlocker();
@@ -907,18 +942,54 @@
         updateAuthBlocker();
     }
 
+    function updateNavForAuth() {
+        const loggedIn = isLoggedIn();
+        const protectedLinks = document.querySelectorAll('a[href="products.html"], a[href="add.html"]');
+
+        protectedLinks.forEach(function(link) {
+            const navItem = link.closest('li');
+            if (!loggedIn) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isProtectedPage()) {
+                        openSignInModal();
+                    } else {
+                        // alert('Please sign in or register to access products.');
+                        openSignInModal();
+                    }
+                });
+                link.classList.add('auth-required-link');
+                if (navItem) navItem.classList.add('auth-required-nav');
+            } else {
+                link.classList.remove('auth-required-link');
+                if (navItem) navItem.classList.remove('auth-required-nav');
+            }
+        });
+
+        const searchToggle = document.getElementById('searchToggle');
+        const notifToggle = document.getElementById('notificationToggle');
+        if (!loggedIn) {
+            if (searchToggle) searchToggle.style.display = 'none';
+            if (notifToggle) notifToggle.style.display = 'none';
+        } else {
+            if (searchToggle) searchToggle.style.display = '';
+            if (notifToggle) notifToggle.style.display = '';
+        }
+    }
+
     // ============================================================
     // 8. INITIALIZE EVERYTHING
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
+        initAuth();
+        requireAuth();
+        updateNavForAuth();
         initSlider();
         initSearch();
         initNotifications();
         initAddProductForm();
         loadDashboard();
         initDashboardControls();
-        initAuth();
-        requireAuth();
     });
 
 })();
