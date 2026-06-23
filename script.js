@@ -1,9 +1,7 @@
 (function() {
     'use strict';
 
-    // ============================================================
-    // USER-SPECIFIC STORAGE HELPERS
-    // ============================================================
+    
     function getCurrentUser() {
         return JSON.parse(localStorage.getItem('warrantyUser') || 'null');
     }
@@ -467,42 +465,86 @@
                 }
             });
         });
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-        function saveProduct(data) {
-            var products = getUserProducts();
-            data.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            data.createdAt = new Date().toISOString();
-            products.push(data);
-            saveUserProducts(products);
-        }
+    if (!this.checkValidity()) {
+        this.reportValidity();
+        return;
+    }
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (!this.checkValidity()) {
-                this.reportValidity();
-                return;
-            }
-            var productData = {
-                productName: document.getElementById('productName').value.trim(),
-                brandName: document.getElementById('brandName').value.trim(),
-                retailerName: document.getElementById('retailerName').value.trim(),
-                purchaseDate: document.getElementById('purchaseDate').value,
-                warrantyPeriod: document.getElementById('warrantyPeriod').value,
-                warrantyUnit: document.getElementById('warrantyUnit').value,
-                productImages: (productUpload ? productUpload.getFiles().length : 0),
-                hasInvoice: (invoiceUpload ? invoiceUpload.getFiles().length > 0 : false)
-            };
-            saveProduct(productData);
-            alert('✅ Product saved successfully!');
-            form.reset();
-            if (productUpload) productUpload.reset();
-            if (invoiceUpload) invoiceUpload.reset();
-            form.querySelectorAll('.form-input').forEach(function(el) {
-                el.classList.remove('is-valid', 'is-invalid');
-            });
-            if (warrantyInput) warrantyInput.value = '';
-            loadNotifications();
+    var productImages = productUpload ? productUpload.getFiles() : [];
+    var invoiceFiles = invoiceUpload ? invoiceUpload.getFiles() : [];
+
+    var imageData = '';
+    var invoiceData = '';
+    var imagesProcessed = 0;
+    var totalImages = (productImages.length > 0 ? 1 : 0) + (invoiceFiles.length > 0 ? 1 : 0);
+
+    function saveProductData() {
+        var productData = {
+            productName: document.getElementById('productName').value.trim(),
+            brandName: document.getElementById('brandName').value.trim(),
+            retailerName: document.getElementById('retailerName').value.trim(),
+            purchaseDate: document.getElementById('purchaseDate').value,
+            warrantyPeriod: document.getElementById('warrantyPeriod').value,
+            warrantyUnit: document.getElementById('warrantyUnit').value,
+            productImages: productUpload ? productUpload.getFiles().length : 0,
+            hasInvoice: invoiceUpload ? invoiceUpload.getFiles().length > 0 : false,
+            imageData: imageData,
+            invoiceData: invoiceData
+        };
+
+        var products = getUserProducts();
+        productData.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        productData.createdAt = new Date().toISOString();
+        products.push(productData);
+        saveUserProducts(products);
+
+        alert('✅ Product saved successfully!');
+
+        form.reset();
+        if (productUpload) productUpload.reset();
+        if (invoiceUpload) invoiceUpload.reset();
+        form.querySelectorAll('.form-input').forEach(function(el) {
+            el.classList.remove('is-valid', 'is-invalid');
         });
+        if (warrantyInput) warrantyInput.value = '';
+
+        loadNotifications();
+    }
+
+    function checkAndSave() {
+        imagesProcessed++;
+        if (imagesProcessed >= (totalImages === 0 ? 1 : totalImages)) {
+            saveProductData();
+        }
+    }
+
+    // Process product image
+    if (productImages.length > 0) {
+        var reader1 = new FileReader();
+        reader1.onload = function(e) {
+            imageData = e.target.result;
+            checkAndSave();
+        };
+        reader1.readAsDataURL(productImages[0]);
+    } else {
+        checkAndSave();
+    }
+
+    // Process invoice image
+    if (invoiceFiles.length > 0) {
+        var reader2 = new FileReader();
+        reader2.onload = function(e) {
+            invoiceData = e.target.result;
+            checkAndSave();
+        };
+        reader2.readAsDataURL(invoiceFiles[0]);
+    } else {
+        checkAndSave();
+    }
+});
 
         var resetBtn = document.getElementById('resetForm');
         if (resetBtn) {
@@ -521,134 +563,281 @@
         }
     }
 
-    // ============================================================
-    // 5. PRODUCTS DASHBOARD (user-specific)
-    // ============================================================
-    function loadDashboard() {
-        if (!isLoggedIn()) return;
+function loadDashboard() {
+    const grid = document.getElementById('productsGrid');
+    const empty = document.getElementById('productsEmpty');
+    const totalEl = document.getElementById('totalProducts');
+    const activeEl = document.getElementById('activeProducts');
+    const expiringEl = document.getElementById('expiringProducts');
+    const expiredEl = document.getElementById('expiredProducts');
 
-        const grid = document.getElementById('productsGrid');
-        const empty = document.getElementById('productsEmpty');
-        const totalEl = document.getElementById('totalProducts');
-        const activeEl = document.getElementById('activeProducts');
-        const expiringEl = document.getElementById('expiringProducts');
-        const expiredEl = document.getElementById('expiredProducts');
+    if (!grid) return;
 
-        if (!grid) return;
+    const products = getUserProducts();
+    const today = new Date();
 
-        const products = getUserProducts();
-        const today = new Date();
+    let activeCount = 0, expiringCount = 0, expiredCount = 0;
 
-        let activeCount = 0, expiringCount = 0, expiredCount = 0;
+    const processedProducts = products.map(function(product) {
+        const purchaseDate = new Date(product.purchaseDate);
+        const warrantyMonths = product.warrantyUnit === 'years'
+            ? parseInt(product.warrantyPeriod) * 12
+            : parseInt(product.warrantyPeriod);
+        const expiryDate = new Date(purchaseDate);
+        expiryDate.setMonth(expiryDate.getMonth() + warrantyMonths);
+        const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
 
-        const processedProducts = products.map(function(product) {
-            const purchaseDate = new Date(product.purchaseDate);
-            const warrantyMonths = product.warrantyUnit === 'years'
-                ? parseInt(product.warrantyPeriod) * 12
-                : parseInt(product.warrantyPeriod);
-            const expiryDate = new Date(purchaseDate);
-            expiryDate.setMonth(expiryDate.getMonth() + warrantyMonths);
-            const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        let status, statusClass;
+        if (daysLeft < 0) { status = 'Expired'; statusClass = 'expired'; expiredCount++; }
+        else if (daysLeft <= 30) { status = 'Expiring Soon'; statusClass = 'expiring'; expiringCount++; }
+        else { status = 'Active'; statusClass = 'active'; activeCount++; }
 
-            let status, statusClass;
-            if (daysLeft < 0) { status = 'Expired'; statusClass = 'expired'; expiredCount++; }
-            else if (daysLeft <= 30) { status = 'Expiring Soon'; statusClass = 'expiring'; expiringCount++; }
-            else { status = 'Active'; statusClass = 'active'; activeCount++; }
+        return { ...product, expiryDate, daysLeft, status, statusClass };
+    });
 
-            return { ...product, expiryDate, daysLeft, status, statusClass };
+    if (totalEl) totalEl.textContent = products.length;
+    if (activeEl) activeEl.textContent = activeCount;
+    if (expiringEl) expiringEl.textContent = expiringCount;
+    if (expiredEl) expiredEl.textContent = expiredCount;
+
+    if (products.length === 0) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+
+    const filter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+    const sort = document.getElementById('sortProducts')?.value || 'newest';
+
+    let filtered = processedProducts;
+    if (filter === 'active') filtered = filtered.filter(function(p) { return p.statusClass === 'active'; });
+    else if (filter === 'expiring') filtered = filtered.filter(function(p) { return p.statusClass === 'expiring'; });
+    else if (filter === 'expired') filtered = filtered.filter(function(p) { return p.statusClass === 'expired'; });
+
+    filtered.sort(function(a, b) {
+        if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+        if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+        if (sort === 'expiring') return a.daysLeft - b.daysLeft;
+        if (sort === 'name') return a.productName.localeCompare(b.productName);
+        return 0;
+    });
+
+    let html = '';
+    filtered.forEach(function(product) {
+        const formattedDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+        const expiryFormatted = new Date(product.expiryDate).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
         });
 
-        if (totalEl) totalEl.textContent = products.length;
-        if (activeEl) activeEl.textContent = activeCount;
-        if (expiringEl) expiringEl.textContent = expiringCount;
-        if (expiredEl) expiredEl.textContent = expiredCount;
-
-        if (products.length === 0) {
-            grid.innerHTML = '';
-            empty.style.display = 'block';
-            return;
+        // Image HTML
+        let imageHtml = '';
+        if (product.imageData) {
+            imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
+        } else {
+            imageHtml = `<i class="fas fa-box image-placeholder"></i>`;
         }
-        empty.style.display = 'none';
 
-        const filter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
-        const sort = document.getElementById('sortProducts')?.value || 'newest';
-
-        let filtered = processedProducts;
-        if (filter === 'active') filtered = filtered.filter(function(p) { return p.statusClass === 'active'; });
-        else if (filter === 'expiring') filtered = filtered.filter(function(p) { return p.statusClass === 'expiring'; });
-        else if (filter === 'expired') filtered = filtered.filter(function(p) { return p.statusClass === 'expired'; });
-
-        filtered.sort(function(a, b) {
-            if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-            if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-            if (sort === 'expiring') return a.daysLeft - b.daysLeft;
-            if (sort === 'name') return a.productName.localeCompare(b.productName);
-            return 0;
-        });
-
-        let html = '';
-        filtered.forEach(function(product) {
-            const formattedDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric'
-            });
-            const expiryFormatted = new Date(product.expiryDate).toLocaleDateString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric'
-            });
-
-            html += `
-                <div class="product-card" data-id="${product.id}">
-                    <div class="product-card-header">
-                        <div class="product-card-icon"><i class="fas fa-box"></i></div>
-                        <span class="product-status-badge ${product.statusClass}">${product.status}</span>
-                    </div>
+        html += `
+            <div class="product-card" data-id="${product.id}">
+                <div class="product-card-image">
+                    ${imageHtml}
+                    <span class="image-status-badge ${product.statusClass}">${product.status}</span>
+                </div>
+                <div class="product-card-body">
                     <div class="product-card-name">${product.productName}</div>
-                    <div class="product-card-brand">${product.brandName}</div>
+                    <div class="product-card-brand"><i class="fas fa-tag"></i> ${product.brandName}</div>
                     <div class="product-card-details">
-                        <div class="detail-item"><div class="detail-label">Retailer</div><div class="detail-value">${product.retailerName}</div></div>
-                        <div class="detail-item"><div class="detail-label">Purchased</div><div class="detail-value">${formattedDate}</div></div>
-                        <div class="detail-item"><div class="detail-label">Warranty</div><div class="detail-value">${product.warrantyPeriod} ${product.warrantyUnit}</div></div>
-                        <div class="detail-item"><div class="detail-label">Expires</div><div class="detail-value">${expiryFormatted}</div></div>
+                        <div class="detail-item">
+                            <div class="detail-label">Retailer</div>
+                            <div class="detail-value">${product.retailerName}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Purchased</div>
+                            <div class="detail-value">${formattedDate}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Warranty</div>
+                            <div class="detail-value">${product.warrantyPeriod} ${product.warrantyUnit}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Expires</div>
+                            <div class="detail-value">${expiryFormatted}</div>
+                        </div>
                     </div>
                     <div class="product-card-actions">
-                        <button class="btn-small btn-view" data-id="${product.id}"><i class="fas fa-eye"></i> View</button>
-                        <button class="btn-small btn-delete" data-id="${product.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                        <button class="btn-small btn-view" data-id="${product.id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn-small btn-delete" data-id="${product.id}">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    // ---- View Button: Open Detail Modal ----
+    grid.querySelectorAll('.btn-view').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const product = processedProducts.find(function(p) { return p.id === id; });
+            if (product) {
+                openProductDetail(product);
+            }
         });
+    });
 
-        grid.innerHTML = html;
-
-        grid.querySelectorAll('.btn-view').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                const product = processedProducts.find(function(p) { return p.id === id; });
-                if (product) {
-                    alert(
-                        '📦 ' + product.productName + '\n' +
-                        '🏷️ Brand: ' + product.brandName + '\n' +
-                        '🏪 Retailer: ' + product.retailerName + '\n' +
-                        '📅 Purchased: ' + new Date(product.purchaseDate).toLocaleDateString() + '\n' +
-                        '⏱️ Warranty: ' + product.warrantyPeriod + ' ' + product.warrantyUnit + '\n' +
-                        '📊 Status: ' + product.status + ' (' + product.daysLeft + ' days left)'
-                    );
-                }
-            });
+    // ---- Delete Button ----
+    grid.querySelectorAll('.btn-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            if (confirm('Delete this product permanently?')) {
+                let products = getUserProducts();
+                products = products.filter(function(p) { return p.id !== id; });
+                saveUserProducts(products);
+                loadDashboard();
+                loadNotifications();
+            }
         });
+    });
+}
 
-        grid.querySelectorAll('.btn-delete').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                if (confirm('Delete this product permanently?')) {
-                    let products = getUserProducts();
-                    products = products.filter(function(p) { return p.id !== id; });
-                    saveUserProducts(products);
-                    loadDashboard();
-                    loadNotifications();
-                }
-            });
+// ============================================================
+// OPEN PRODUCT DETAIL 
+// ============================================================
+function openProductDetail(product) {
+    const modal = document.getElementById('productDetailModal');
+    const body = document.getElementById('detailBody');
+    if (!modal || !body) return;
+
+    const statusClass = product.statusClass;
+    const purchaseDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const expiryDate = new Date(product.expiryDate).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Image HTML
+    let imageHtml = '';
+    if (product.imageData) {
+        imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
+    } else {
+        imageHtml = `<i class="fas fa-box detail-placeholder"></i>`;
+    }
+
+    let daysLeftText = '';
+    if (statusClass === 'expiring') {
+        daysLeftText = `<span style="color:#f59e0b; font-size:0.9rem;">(${product.daysLeft} days left)</span>`;
+    } else if (statusClass === 'expired') {
+        daysLeftText = `<span style="color:#dc2626; font-size:0.9rem;">(Expired ${Math.abs(product.daysLeft)} days ago)</span>`;
+    }
+
+    // Invoice download button
+    let invoiceHtml = '';
+    if (product.invoiceData) {
+        invoiceHtml = `
+            <div style="margin-top:16px; text-align:center;">
+                <button class="btn btn-primary" id="downloadInvoiceBtn" style="width:100%; justify-content:center; padding:12px;">
+                    <i class="fas fa-file-invoice"></i> Download Invoice
+                </button>
+            </div>
+        `;
+    } else if (product.hasInvoice) {
+        // Fallback: if hasInvoice is true but no data (legacy products)
+        invoiceHtml = `
+            <div style="margin-top:16px; text-align:center; color:#6b7280; font-size:0.9rem;">
+                <i class="fas fa-file-invoice"></i> Invoice was uploaded but data not available
+            </div>
+        `;
+    }
+
+    body.innerHTML = `
+        <div class="detail-product-image">${imageHtml}</div>
+        <div class="detail-title">${product.productName}</div>
+        <div class="detail-subtitle"><i class="fas fa-tag"></i> ${product.brandName}</div>
+        <div>
+            <span class="detail-status-badge ${statusClass}">${product.status}</span>
+            ${daysLeftText}
+        </div>
+        <div style="margin-top:12px;">
+            <div class="detail-row"><span class="label">Retailer</span><span class="value">${product.retailerName}</span></div>
+            <div class="detail-row"><span class="label">Purchase Date</span><span class="value">${purchaseDate}</span></div>
+            <div class="detail-row"><span class="label">Warranty Period</span><span class="value">${product.warrantyPeriod} ${product.warrantyUnit}</span></div>
+            <div class="detail-row"><span class="label">Expiry Date</span><span class="value">${expiryDate}</span></div>
+            ${product.productImages ? `<div class="detail-row"><span class="label">Images</span><span class="value">${product.productImages} uploaded</span></div>` : ''}
+            ${product.hasInvoice ? `<div class="detail-row"><span class="label">Invoice</span><span class="value">✅ Uploaded</span></div>` : ''}
+        </div>
+        ${invoiceHtml}
+    `;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // ---- Add download event listener ----
+    const downloadBtn = document.getElementById('downloadInvoiceBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            downloadInvoice(product.invoiceData, product.productName);
         });
     }
+}
+// ============================================================
+// DOWNLOAD INVOICE
+// ============================================================
+function downloadInvoice(base64Data, productName) {
+    if (!base64Data) {
+        alert('No invoice found for this product.');
+        return;
+    }
+
+    try {
+        // Create a temporary anchor element
+        const link = document.createElement('a');
+        link.href = base64Data;
+        
+        // Extract file extension from the base64 data
+        const mimeType = base64Data.match(/data:([^;]+)/);
+        const ext = mimeType && mimeType[1] ? mimeType[1].split('/')[1] : 'png';
+        
+        // Create filename with product name and date
+        const date = new Date().toISOString().split('T')[0];
+        const fileName = `${productName.replace(/\s+/g, '_')}_invoice_${date}.${ext}`;
+        link.download = fileName;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+    } catch (error) {
+        console.error('Error downloading invoice:', error);
+        alert('❌ Failed to download invoice. Please try again.');
+    }
+}
+// ---- Close Detail Modal ----
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.getElementById('detailClose');
+    const overlay = document.getElementById('detailOverlay');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            document.getElementById('productDetailModal').classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            document.getElementById('productDetailModal').classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
+});
 
     function initDashboardControls() {
         if (!isLoggedIn()) return;
