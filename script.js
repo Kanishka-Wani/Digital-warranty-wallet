@@ -1,7 +1,9 @@
 (function() {
     'use strict';
 
-    
+    // ============================================================
+    // AUTH HELPERS
+    // ============================================================
     function getCurrentUser() {
         return JSON.parse(localStorage.getItem('warrantyUser') || 'null');
     }
@@ -465,86 +467,126 @@
                 }
             });
         });
-form.addEventListener('submit', function(e) {
-    e.preventDefault();
 
-    if (!this.checkValidity()) {
-        this.reportValidity();
-        return;
-    }
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-    var productImages = productUpload ? productUpload.getFiles() : [];
-    var invoiceFiles = invoiceUpload ? invoiceUpload.getFiles() : [];
+            // ---- Custom validation ----
+            let isValid = true;
+            const productName = document.getElementById('productName').value.trim();
+            const brandName = document.getElementById('brandName').value.trim();
+            const retailerName = document.getElementById('retailerName').value.trim();
+            const purchaseDate = document.getElementById('purchaseDate').value;
+            const warrantyPeriod = document.getElementById('warrantyPeriod').value;
 
-    var imageData = '';
-    var invoiceData = '';
-    var imagesProcessed = 0;
-    var totalImages = (productImages.length > 0 ? 1 : 0) + (invoiceFiles.length > 0 ? 1 : 0);
+            // Clear previous custom errors
+            form.querySelectorAll('.custom-error').forEach(function(el) { el.remove(); });
+            form.querySelectorAll('.form-input.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
 
-    function saveProductData() {
-        var productData = {
-            productName: document.getElementById('productName').value.trim(),
-            brandName: document.getElementById('brandName').value.trim(),
-            retailerName: document.getElementById('retailerName').value.trim(),
-            purchaseDate: document.getElementById('purchaseDate').value,
-            warrantyPeriod: document.getElementById('warrantyPeriod').value,
-            warrantyUnit: document.getElementById('warrantyUnit').value,
-            productImages: productUpload ? productUpload.getFiles().length : 0,
-            hasInvoice: invoiceUpload ? invoiceUpload.getFiles().length > 0 : false,
-            imageData: imageData,
-            invoiceData: invoiceData
-        };
+            function showCustomError(inputId, message) {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.classList.add('is-invalid');
+                    const error = document.createElement('div');
+                    error.className = 'custom-error';
+                    error.style.cssText = 'color: #ef4444; font-size: 0.8rem; margin-top: 4px;';
+                    error.textContent = message;
+                    input.parentNode.appendChild(error);
+                }
+                isValid = false;
+            }
 
-        var products = getUserProducts();
-        productData.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-        productData.createdAt = new Date().toISOString();
-        products.push(productData);
-        saveUserProducts(products);
+            if (!productName) showCustomError('productName', 'Please enter a product name.');
+            if (!brandName) showCustomError('brandName', 'Please enter a brand name.');
+            if (!retailerName) showCustomError('retailerName', 'Please enter a retailer name.');
+            if (!purchaseDate) showCustomError('purchaseDate', 'Please select a purchase date.');
+            else {
+                const selectedDate = new Date(purchaseDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (selectedDate > today) {
+                    showCustomError('purchaseDate', 'Purchase date cannot be in the future.');
+                }
+            }
+            if (!warrantyPeriod || parseInt(warrantyPeriod) < 1) {
+                showCustomError('warrantyPeriod', 'Please enter a valid warranty period (minimum 1).');
+            }
 
-        alert('✅ Product saved successfully!');
+            if (!isValid) {
+                const firstError = form.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.focus();
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
 
-        form.reset();
-        if (productUpload) productUpload.reset();
-        if (invoiceUpload) invoiceUpload.reset();
-        form.querySelectorAll('.form-input').forEach(function(el) {
-            el.classList.remove('is-valid', 'is-invalid');
+            // ---- Process images and save ----
+            var productImages = productUpload ? productUpload.getFiles() : [];
+            var invoiceFiles = invoiceUpload ? invoiceUpload.getFiles() : [];
+
+            var imageData = '';
+            var invoiceData = '';
+            var filesToProcess = 0;
+            var processedCount = 0;
+
+            function finalizeSave() {
+                var productData = {
+                    productName: productName,
+                    brandName: brandName,
+                    retailerName: retailerName,
+                    purchaseDate: purchaseDate,
+                    warrantyPeriod: warrantyPeriod,
+                    warrantyUnit: document.getElementById('warrantyUnit').value,
+                    productImages: productUpload ? productUpload.getFiles().length : 0,
+                    hasInvoice: invoiceUpload ? invoiceUpload.getFiles().length > 0 : false,
+                    imageData: imageData,
+                    invoiceData: invoiceData
+                };
+
+                var products = getUserProducts();
+                productData.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                productData.createdAt = new Date().toISOString();
+                products.push(productData);
+                saveUserProducts(products);
+
+                localStorage.setItem('warrantySuccess', '✅ Product "' + productName + '" saved successfully!');
+                window.location.href = 'products.html';
+            }
+
+            function onFileProcessed() {
+                processedCount++;
+                if (processedCount === filesToProcess) {
+                    finalizeSave();
+                }
+            }
+
+            if (productImages.length > 0) filesToProcess++;
+            if (invoiceFiles.length > 0) filesToProcess++;
+
+            if (filesToProcess === 0) {
+                finalizeSave();
+                return;
+            }
+
+            if (productImages.length > 0) {
+                var reader1 = new FileReader();
+                reader1.onload = function(e) {
+                    imageData = e.target.result;
+                    onFileProcessed();
+                };
+                reader1.readAsDataURL(productImages[0]);
+            }
+
+            if (invoiceFiles.length > 0) {
+                var reader2 = new FileReader();
+                reader2.onload = function(e) {
+                    invoiceData = e.target.result;
+                    onFileProcessed();
+                };
+                reader2.readAsDataURL(invoiceFiles[0]);
+            }
         });
-        if (warrantyInput) warrantyInput.value = '';
-
-        loadNotifications();
-    }
-
-    function checkAndSave() {
-        imagesProcessed++;
-        if (imagesProcessed >= (totalImages === 0 ? 1 : totalImages)) {
-            saveProductData();
-        }
-    }
-
-    // Process product image
-    if (productImages.length > 0) {
-        var reader1 = new FileReader();
-        reader1.onload = function(e) {
-            imageData = e.target.result;
-            checkAndSave();
-        };
-        reader1.readAsDataURL(productImages[0]);
-    } else {
-        checkAndSave();
-    }
-
-    // Process invoice image
-    if (invoiceFiles.length > 0) {
-        var reader2 = new FileReader();
-        reader2.onload = function(e) {
-            invoiceData = e.target.result;
-            checkAndSave();
-        };
-        reader2.readAsDataURL(invoiceFiles[0]);
-    } else {
-        checkAndSave();
-    }
-});
 
         var resetBtn = document.getElementById('resetForm');
         if (resetBtn) {
@@ -563,281 +605,179 @@ form.addEventListener('submit', function(e) {
         }
     }
 
-function loadDashboard() {
-    const grid = document.getElementById('productsGrid');
-    const empty = document.getElementById('productsEmpty');
-    const totalEl = document.getElementById('totalProducts');
-    const activeEl = document.getElementById('activeProducts');
-    const expiringEl = document.getElementById('expiringProducts');
-    const expiredEl = document.getElementById('expiredProducts');
+    // ============================================================
+    // 5. PRODUCTS DASHBOARD
+    // ============================================================
+    function loadDashboard() {
+        const grid = document.getElementById('productsGrid');
+        const empty = document.getElementById('productsEmpty');
+        const totalEl = document.getElementById('totalProducts');
+        const activeEl = document.getElementById('activeProducts');
+        const expiringEl = document.getElementById('expiringProducts');
+        const expiredEl = document.getElementById('expiredProducts');
 
-    if (!grid) return;
+        if (!grid) return;
 
-    const products = getUserProducts();
-    const today = new Date();
-
-    let activeCount = 0, expiringCount = 0, expiredCount = 0;
-
-    const processedProducts = products.map(function(product) {
-        const purchaseDate = new Date(product.purchaseDate);
-        const warrantyMonths = product.warrantyUnit === 'years'
-            ? parseInt(product.warrantyPeriod) * 12
-            : parseInt(product.warrantyPeriod);
-        const expiryDate = new Date(purchaseDate);
-        expiryDate.setMonth(expiryDate.getMonth() + warrantyMonths);
-        const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-
-        let status, statusClass;
-        if (daysLeft < 0) { status = 'Expired'; statusClass = 'expired'; expiredCount++; }
-        else if (daysLeft <= 30) { status = 'Expiring Soon'; statusClass = 'expiring'; expiringCount++; }
-        else { status = 'Active'; statusClass = 'active'; activeCount++; }
-
-        return { ...product, expiryDate, daysLeft, status, statusClass };
-    });
-
-    if (totalEl) totalEl.textContent = products.length;
-    if (activeEl) activeEl.textContent = activeCount;
-    if (expiringEl) expiringEl.textContent = expiringCount;
-    if (expiredEl) expiredEl.textContent = expiredCount;
-
-    if (products.length === 0) {
-        grid.innerHTML = '';
-        empty.style.display = 'block';
-        return;
-    }
-    empty.style.display = 'none';
-
-    const filter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
-    const sort = document.getElementById('sortProducts')?.value || 'newest';
-
-    let filtered = processedProducts;
-    if (filter === 'active') filtered = filtered.filter(function(p) { return p.statusClass === 'active'; });
-    else if (filter === 'expiring') filtered = filtered.filter(function(p) { return p.statusClass === 'expiring'; });
-    else if (filter === 'expired') filtered = filtered.filter(function(p) { return p.statusClass === 'expired'; });
-
-    filtered.sort(function(a, b) {
-        if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-        if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-        if (sort === 'expiring') return a.daysLeft - b.daysLeft;
-        if (sort === 'name') return a.productName.localeCompare(b.productName);
-        return 0;
-    });
-
-    let html = '';
-    filtered.forEach(function(product) {
-        const formattedDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-        const expiryFormatted = new Date(product.expiryDate).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-
-        // Image HTML
-        let imageHtml = '';
-        if (product.imageData) {
-            imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
-        } else {
-            imageHtml = `<i class="fas fa-box image-placeholder"></i>`;
+        // Show success message if present
+        const successMsg = localStorage.getItem('warrantySuccess');
+        if (successMsg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #065f46;
+                color: #d1fae5;
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                z-index: 99999;
+                border-left: 4px solid #34d399;
+                animation: slideInRight 0.5s ease;
+                max-width: 380px;
+            `;
+            toast.textContent = successMsg;
+            document.body.appendChild(toast);
+            setTimeout(function() {
+                toast.style.transition = 'opacity 0.5s ease';
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 500);
+            }, 4000);
+            localStorage.removeItem('warrantySuccess');
         }
 
-        html += `
-            <div class="product-card" data-id="${product.id}">
-                <div class="product-card-image">
-                    ${imageHtml}
-                    <span class="image-status-badge ${product.statusClass}">${product.status}</span>
-                </div>
-                <div class="product-card-body">
-                    <div class="product-card-name">${product.productName}</div>
-                    <div class="product-card-brand"><i class="fas fa-tag"></i> ${product.brandName}</div>
-                    <div class="product-card-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Retailer</div>
-                            <div class="detail-value">${product.retailerName}</div>
+        const products = getUserProducts();
+        const today = new Date();
+
+        let activeCount = 0, expiringCount = 0, expiredCount = 0;
+
+        const processedProducts = products.map(function(product) {
+            const purchaseDate = new Date(product.purchaseDate);
+            const warrantyMonths = product.warrantyUnit === 'years'
+                ? parseInt(product.warrantyPeriod) * 12
+                : parseInt(product.warrantyPeriod);
+            const expiryDate = new Date(purchaseDate);
+            expiryDate.setMonth(expiryDate.getMonth() + warrantyMonths);
+            const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+            let status, statusClass;
+            if (daysLeft < 0) { status = 'Expired'; statusClass = 'expired'; expiredCount++; }
+            else if (daysLeft <= 30) { status = 'Expiring Soon'; statusClass = 'expiring'; expiringCount++; }
+            else { status = 'Active'; statusClass = 'active'; activeCount++; }
+
+            return { ...product, expiryDate, daysLeft, status, statusClass };
+        });
+
+        if (totalEl) totalEl.textContent = products.length;
+        if (activeEl) activeEl.textContent = activeCount;
+        if (expiringEl) expiringEl.textContent = expiringCount;
+        if (expiredEl) expiredEl.textContent = expiredCount;
+
+        if (products.length === 0) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+
+        const filter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+        const sort = document.getElementById('sortProducts')?.value || 'newest';
+
+        let filtered = processedProducts;
+        if (filter === 'active') filtered = filtered.filter(function(p) { return p.statusClass === 'active'; });
+        else if (filter === 'expiring') filtered = filtered.filter(function(p) { return p.statusClass === 'expiring'; });
+        else if (filter === 'expired') filtered = filtered.filter(function(p) { return p.statusClass === 'expired'; });
+
+        filtered.sort(function(a, b) {
+            if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+            if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+            if (sort === 'expiring') return a.daysLeft - b.daysLeft;
+            if (sort === 'name') return a.productName.localeCompare(b.productName);
+            return 0;
+        });
+
+        let html = '';
+        filtered.forEach(function(product) {
+            const formattedDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+            const expiryFormatted = new Date(product.expiryDate).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+
+            let imageHtml = '';
+            if (product.imageData) {
+                imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
+            } else {
+                imageHtml = `<i class="fas fa-box image-placeholder"></i>`;
+            }
+
+            html += `
+                <div class="product-card" data-id="${product.id}">
+                    <div class="product-card-image">
+                        ${imageHtml}
+                        <span class="image-status-badge ${product.statusClass}">${product.status}</span>
+                    </div>
+                    <div class="product-card-body">
+                        <div class="product-card-name">${product.productName}</div>
+                        <div class="product-card-brand"><i class="fas fa-tag"></i> ${product.brandName}</div>
+                        <div class="product-card-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Retailer</div>
+                                <div class="detail-value">${product.retailerName}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Purchased</div>
+                                <div class="detail-value">${formattedDate}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Warranty</div>
+                                <div class="detail-value">${product.warrantyPeriod} ${product.warrantyUnit}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Expires</div>
+                                <div class="detail-value">${expiryFormatted}</div>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Purchased</div>
-                            <div class="detail-value">${formattedDate}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Warranty</div>
-                            <div class="detail-value">${product.warrantyPeriod} ${product.warrantyUnit}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Expires</div>
-                            <div class="detail-value">${expiryFormatted}</div>
+                        <div class="product-card-actions">
+                            <button class="btn-small btn-view" data-id="${product.id}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn-small btn-delete" data-id="${product.id}">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
                         </div>
                     </div>
-                    <div class="product-card-actions">
-                        <button class="btn-small btn-view" data-id="${product.id}">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="btn-small btn-delete" data-id="${product.id}">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
-                    </div>
                 </div>
-            </div>
-        `;
-    });
-
-    grid.innerHTML = html;
-
-    // ---- View Button: Open Detail Modal ----
-    grid.querySelectorAll('.btn-view').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const product = processedProducts.find(function(p) { return p.id === id; });
-            if (product) {
-                openProductDetail(product);
-            }
+            `;
         });
-    });
 
-    // ---- Delete Button ----
-    grid.querySelectorAll('.btn-delete').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            if (confirm('Delete this product permanently?')) {
-                let products = getUserProducts();
-                products = products.filter(function(p) { return p.id !== id; });
-                saveUserProducts(products);
-                loadDashboard();
-                loadNotifications();
-            }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.btn-view').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const product = processedProducts.find(function(p) { return p.id === id; });
+                if (product) {
+                    openProductDetail(product);
+                }
+            });
         });
-    });
-}
 
-// ============================================================
-// OPEN PRODUCT DETAIL 
-// ============================================================
-function openProductDetail(product) {
-    const modal = document.getElementById('productDetailModal');
-    const body = document.getElementById('detailBody');
-    if (!modal || !body) return;
-
-    const statusClass = product.statusClass;
-    const purchaseDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-    const expiryDate = new Date(product.expiryDate).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    // Image HTML
-    let imageHtml = '';
-    if (product.imageData) {
-        imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
-    } else {
-        imageHtml = `<i class="fas fa-box detail-placeholder"></i>`;
-    }
-
-    let daysLeftText = '';
-    if (statusClass === 'expiring') {
-        daysLeftText = `<span style="color:#f59e0b; font-size:0.9rem;">(${product.daysLeft} days left)</span>`;
-    } else if (statusClass === 'expired') {
-        daysLeftText = `<span style="color:#dc2626; font-size:0.9rem;">(Expired ${Math.abs(product.daysLeft)} days ago)</span>`;
-    }
-
-    // Invoice download button
-    let invoiceHtml = '';
-    if (product.invoiceData) {
-        invoiceHtml = `
-            <div style="margin-top:16px; text-align:center;">
-                <button class="btn btn-primary" id="downloadInvoiceBtn" style="width:100%; justify-content:center; padding:12px;">
-                    <i class="fas fa-file-invoice"></i> Download Invoice
-                </button>
-            </div>
-        `;
-    } else if (product.hasInvoice) {
-        // Fallback: if hasInvoice is true but no data (legacy products)
-        invoiceHtml = `
-            <div style="margin-top:16px; text-align:center; color:#6b7280; font-size:0.9rem;">
-                <i class="fas fa-file-invoice"></i> Invoice was uploaded but data not available
-            </div>
-        `;
-    }
-
-    body.innerHTML = `
-        <div class="detail-product-image">${imageHtml}</div>
-        <div class="detail-title">${product.productName}</div>
-        <div class="detail-subtitle"><i class="fas fa-tag"></i> ${product.brandName}</div>
-        <div>
-            <span class="detail-status-badge ${statusClass}">${product.status}</span>
-            ${daysLeftText}
-        </div>
-        <div style="margin-top:12px;">
-            <div class="detail-row"><span class="label">Retailer</span><span class="value">${product.retailerName}</span></div>
-            <div class="detail-row"><span class="label">Purchase Date</span><span class="value">${purchaseDate}</span></div>
-            <div class="detail-row"><span class="label">Warranty Period</span><span class="value">${product.warrantyPeriod} ${product.warrantyUnit}</span></div>
-            <div class="detail-row"><span class="label">Expiry Date</span><span class="value">${expiryDate}</span></div>
-            ${product.productImages ? `<div class="detail-row"><span class="label">Images</span><span class="value">${product.productImages} uploaded</span></div>` : ''}
-            ${product.hasInvoice ? `<div class="detail-row"><span class="label">Invoice</span><span class="value">✅ Uploaded</span></div>` : ''}
-        </div>
-        ${invoiceHtml}
-    `;
-
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    // ---- Add download event listener ----
-    const downloadBtn = document.getElementById('downloadInvoiceBtn');
-    if (downloadBtn) {
-        downloadBtn.addEventListener('click', function() {
-            downloadInvoice(product.invoiceData, product.productName);
+        grid.querySelectorAll('.btn-delete').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                if (confirm('Delete this product permanently?')) {
+                    let products = getUserProducts();
+                    products = products.filter(function(p) { return p.id !== id; });
+                    saveUserProducts(products);
+                    loadDashboard();
+                    loadNotifications();
+                }
+            });
         });
     }
-}
-// ============================================================
-// DOWNLOAD INVOICE
-// ============================================================
-function downloadInvoice(base64Data, productName) {
-    if (!base64Data) {
-        alert('No invoice found for this product.');
-        return;
-    }
-
-    try {
-        // Create a temporary anchor element
-        const link = document.createElement('a');
-        link.href = base64Data;
-        
-        // Extract file extension from the base64 data
-        const mimeType = base64Data.match(/data:([^;]+)/);
-        const ext = mimeType && mimeType[1] ? mimeType[1].split('/')[1] : 'png';
-        
-        // Create filename with product name and date
-        const date = new Date().toISOString().split('T')[0];
-        const fileName = `${productName.replace(/\s+/g, '_')}_invoice_${date}.${ext}`;
-        link.download = fileName;
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-    } catch (error) {
-        console.error('Error downloading invoice:', error);
-        alert('❌ Failed to download invoice. Please try again.');
-    }
-}
-// ---- Close Detail Modal ----
-document.addEventListener('DOMContentLoaded', function() {
-    const closeBtn = document.getElementById('detailClose');
-    const overlay = document.getElementById('detailOverlay');
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            document.getElementById('productDetailModal').classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            document.getElementById('productDetailModal').classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
-});
 
     function initDashboardControls() {
         if (!isLoggedIn()) return;
@@ -860,7 +800,269 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================================
-    // 6. AUTH SYSTEM
+    // 6. OPEN PRODUCT DETAIL
+    // ============================================================
+    function openProductDetail(product) {
+        const modal = document.getElementById('productDetailModal');
+        const body = document.getElementById('detailBody');
+        if (!modal || !body) return;
+
+        const statusClass = product.statusClass;
+        const purchaseDate = new Date(product.purchaseDate).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const expiryDate = new Date(product.expiryDate).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        let imageHtml = '';
+        if (product.imageData) {
+            imageHtml = `<img src="${product.imageData}" alt="${product.productName}" />`;
+        } else {
+            imageHtml = `<i class="fas fa-box detail-placeholder"></i>`;
+        }
+
+        let daysLeftText = '';
+        if (statusClass === 'expiring') {
+            daysLeftText = `<span style="color:#f59e0b; font-size:0.9rem;">(${product.daysLeft} days left)</span>`;
+        } else if (statusClass === 'expired') {
+            daysLeftText = `<span style="color:#dc2626; font-size:0.9rem;">(Expired ${Math.abs(product.daysLeft)} days ago)</span>`;
+        }
+
+        let invoiceHtml = '';
+        if (product.invoiceData) {
+            invoiceHtml = `
+                <div style="margin-top:16px; text-align:center;">
+                    <button class="btn btn-primary" id="downloadInvoiceBtn" style="width:100%; justify-content:center; padding:12px;">
+                        <i class="fas fa-file-invoice"></i> Download Invoice
+                    </button>
+                </div>
+            `;
+        } else if (product.hasInvoice) {
+            invoiceHtml = `
+                <div style="margin-top:16px; text-align:center; color:#6b7280; font-size:0.9rem;">
+                    <i class="fas fa-file-invoice"></i> Invoice was uploaded but data not available
+                </div>
+            `;
+        }
+
+        body.innerHTML = `
+            <div class="detail-product-image">${imageHtml}</div>
+            <div class="detail-title">${product.productName}</div>
+            <div class="detail-subtitle"><i class="fas fa-tag"></i> ${product.brandName}</div>
+            <div>
+                <span class="detail-status-badge ${statusClass}">${product.status}</span>
+                ${daysLeftText}
+            </div>
+            <div style="margin-top:12px;">
+                <div class="detail-row"><span class="label">Retailer</span><span class="value">${product.retailerName}</span></div>
+                <div class="detail-row"><span class="label">Purchase Date</span><span class="value">${purchaseDate}</span></div>
+                <div class="detail-row"><span class="label">Warranty Period</span><span class="value">${product.warrantyPeriod} ${product.warrantyUnit}</span></div>
+                <div class="detail-row"><span class="label">Expiry Date</span><span class="value">${expiryDate}</span></div>
+                ${product.productImages ? `<div class="detail-row"><span class="label">Images</span><span class="value">${product.productImages} uploaded</span></div>` : ''}
+                ${product.hasInvoice ? `<div class="detail-row"><span class="label">Invoice</span><span class="value">✅ Uploaded</span></div>` : ''}
+            </div>
+            ${invoiceHtml}
+        `;
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        const downloadBtn = document.getElementById('downloadInvoiceBtn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+                downloadInvoice(product.invoiceData, product.productName);
+            });
+        }
+    }
+
+    // ============================================================
+    // 7. DOWNLOAD INVOICE
+    // ============================================================
+    function downloadInvoice(base64Data, productName) {
+        if (!base64Data) {
+            alert('No invoice found for this product.');
+            return;
+        }
+
+        try {
+            const link = document.createElement('a');
+            link.href = base64Data;
+            const mimeType = base64Data.match(/data:([^;]+)/);
+            const ext = mimeType && mimeType[1] ? mimeType[1].split('/')[1] : 'png';
+            const date = new Date().toISOString().split('T')[0];
+            const fileName = `${productName.replace(/\s+/g, '_')}_invoice_${date}.${ext}`;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            alert('❌ Failed to download invoice. Please try again.');
+        }
+    }
+
+    // ---- Close Detail Modal ----
+    document.addEventListener('DOMContentLoaded', function() {
+        const closeBtn = document.getElementById('detailClose');
+        const overlay = document.getElementById('detailOverlay');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                document.getElementById('productDetailModal').classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                document.getElementById('productDetailModal').classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+    });
+
+    // ============================================================
+    // 8. NAVIGATION – Dynamic based on login state
+    // ============================================================
+   // ============================================================
+// SIDEBAR CONTROLS
+// ============================================================
+function initSidebar() {
+    const hamburger = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const closeBtn = document.getElementById('sidebarClose');
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        if (hamburger) hamburger.classList.add('active');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        if (hamburger) hamburger.classList.remove('active');
+    }
+
+    if (hamburger) {
+        hamburger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // Close sidebar on nav link click (mobile)
+    document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
+        link.addEventListener('click', closeSidebar);
+    });
+
+    // Sidebar signin/register buttons
+    const sidebarSignin = document.getElementById('sidebarSigninBtn');
+    const sidebarRegister = document.getElementById('sidebarRegisterBtn');
+    if (sidebarSignin) {
+        sidebarSignin.addEventListener('click', function() {
+            closeSidebar();
+            const signinBtn = document.getElementById('signinBtn');
+            if (signinBtn) signinBtn.click();
+        });
+    }
+    if (sidebarRegister) {
+        sidebarRegister.addEventListener('click', function() {
+            closeSidebar();
+            const registerBtn = document.getElementById('registerBtn');
+            if (registerBtn) registerBtn.click();
+        });
+    }
+}
+
+// ============================================================
+// UPDATE NAVIGATION (desktop + sidebar)
+// ============================================================
+function updateNavForAuth() {
+    const loggedIn = isLoggedIn();
+
+    // 1. Desktop navigation (menu)
+    const desktopLinks = document.querySelectorAll('.menu li a');
+    desktopLinks.forEach(function(link) {
+        const text = link.textContent.trim();
+        const parentLi = link.closest('li');
+        if (!parentLi) return;
+        if (loggedIn) {
+            parentLi.style.display = '';
+        } else {
+            if (text === 'Home' || text === 'About') {
+                parentLi.style.display = '';
+            } else {
+                parentLi.style.display = 'none';
+            }
+        }
+    });
+
+    // 2. Sidebar navigation (mobile)
+    const sidebarLinks = document.querySelectorAll('.sidebar-nav li a');
+    sidebarLinks.forEach(function(link) {
+        const text = link.textContent.trim();
+        const parentLi = link.closest('li');
+        if (!parentLi) return;
+        if (loggedIn) {
+            parentLi.style.display = '';
+        } else {
+            if (text === 'Home' || text === 'About') {
+                parentLi.style.display = '';
+            } else {
+                parentLi.style.display = 'none';
+            }
+        }
+    });
+
+    // 3. Footer links (NEW)
+    const footerLinks = document.querySelectorAll('.footer-links li');
+    footerLinks.forEach(function(item) {
+        const link = item.querySelector('a');
+        if (!link) return;
+        const text = link.textContent.trim();
+        if (loggedIn) {
+            item.style.display = '';
+        } else {
+            // Only show Home and About in footer when logged out
+            if (text === 'Home' || text === 'About') {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        }
+    });
+
+    // 4. Sidebar auth buttons (show when logged out, hide when logged in)
+    const sidebarAuth = document.querySelector('.sidebar-auth');
+    if (sidebarAuth) {
+        sidebarAuth.style.display = loggedIn ? 'none' : 'flex';
+    }
+
+    // 5. Header auth buttons / profile
+    const authButtons = document.getElementById('authButtons');
+    const profileContainer = document.getElementById('profileContainer');
+    if (authButtons) authButtons.style.display = loggedIn ? 'none' : 'flex';
+    if (profileContainer) profileContainer.style.display = loggedIn ? 'block' : 'none';
+
+    // 6. Search & Notification visibility (only when logged in)
+    const searchToggle = document.getElementById('searchToggle');
+    const notifToggle = document.getElementById('notificationToggle');
+    if (searchToggle) searchToggle.style.display = loggedIn ? 'flex' : 'none';
+    if (notifToggle) notifToggle.style.display = loggedIn ? 'flex' : 'none';
+}
+
+    // ============================================================
+    // 9. AUTH SYSTEM
     // ============================================================
     function initAuth() {
         const signinBtn = document.getElementById('signinBtn');
@@ -911,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 authButtons.style.display = 'flex';
                 profileContainer.style.display = 'none';
             }
+            updateNavForAuth();
         }
 
         if (profileAvatar && profileDropdown) {
@@ -957,19 +1160,34 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // ---- Sign In ----
         if (signinForm) {
             signinForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const email = document.getElementById('signinEmail').value.trim();
                 const password = document.getElementById('signinPassword').value;
-                const users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
-                const user = users.find(function(u) { return u.email === email && u.password === password; });
+
+                // Get users from localStorage
+                let users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
+
+                // If no users exist yet, create a default admin for testing
+                if (users.length === 0) {
+                    users = [
+                        { name: 'Demo User', email: 'demo@warranty.com', password: 'demo123' }
+                    ];
+                    localStorage.setItem('warrantyUsers', JSON.stringify(users));
+                }
+
+                const user = users.find(function(u) {
+                    return u.email === email && u.password === password;
+                });
 
                 if (user) {
                     localStorage.setItem('warrantyUser', JSON.stringify({ name: user.name, email: user.email }));
                     closeAllModals();
                     checkAuthState();
                     updateAuthBlocker();
+                    // Reload to refresh the page
                     location.reload();
                     signinForm.reset();
                 } else {
@@ -978,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // ---- Register ----
         if (registerForm) {
             registerForm.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -996,6 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 let users = JSON.parse(localStorage.getItem('warrantyUsers') || '[]');
+
                 if (users.some(function(u) { return u.email === email; })) {
                     alert('❌ An account with this email already exists.');
                     return;
@@ -1004,6 +1224,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newUser = { name, email, password };
                 users.push(newUser);
                 localStorage.setItem('warrantyUsers', JSON.stringify(users));
+
+                // Auto-login after registration
                 localStorage.setItem('warrantyUser', JSON.stringify({ name, email }));
                 closeAllModals();
                 checkAuthState();
@@ -1014,14 +1236,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // ---- Logout ----
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function() {
                 localStorage.removeItem('warrantyUser');
                 if (profileDropdown) profileDropdown.classList.remove('active');
                 checkAuthState();
                 updateAuthBlocker();
+                // Redirect to home if on protected page
                 if (isProtectedPage()) {
-                    location.href = 'index.html';
+                    window.location.href = 'index.html';
                 } else {
                     location.reload();
                 }
@@ -1036,14 +1260,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================================
-    // 7. PAGE PROTECTION – Full-page blocker with forced visibility
+    // 10. PAGE PROTECTION – Full-page blocker
     // ============================================================
     function createAuthBlocker() {
-        // Remove any existing blocker
         const existing = document.getElementById('authBlocker');
         if (existing) existing.remove();
 
-        // Create blocker
         const blocker = document.createElement('div');
         blocker.id = 'authBlocker';
         blocker.style.cssText = `
@@ -1081,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', function() {
             openSignInModal();
         });
 
+        // Hide all other content
         const keepVisibleIds = ['authBlocker', 'signinModal', 'registerModal', 'authOverlay'];
         const bodyChildren = document.body.children;
         for (let i = 0; i < bodyChildren.length; i++) {
@@ -1094,7 +1317,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el) el.style.zIndex = '1000000';
         });
 
-        // Prevent scrolling
         document.body.style.overflow = 'hidden';
         document.documentElement.style.overflow = 'hidden';
     }
@@ -1103,7 +1325,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const blocker = document.getElementById('authBlocker');
         if (blocker) blocker.remove();
 
-        // Restore all body children visibility
         const bodyChildren = document.body.children;
         for (let i = 0; i < bodyChildren.length; i++) {
             const child = bodyChildren[i];
@@ -1114,7 +1335,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el) el.style.zIndex = '';
         });
 
-        // Restore scrolling
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
     }
@@ -1129,56 +1349,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function requireAuth() {
         updateAuthBlocker();
-    }
-
-    function updateNavForAuth() {
-        const loggedIn = isLoggedIn();
-        const protectedLinks = document.querySelectorAll('a[href="products.html"], a[href="add.html"]');
-
-        protectedLinks.forEach(function(link) {
-            const navItem = link.closest('li');
-            if (!loggedIn) {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (isProtectedPage()) {
-                        openSignInModal();
-                    } else {
-                        // alert('Please sign in or register to access products.');
-                        openSignInModal();
-                    }
-                });
-                link.classList.add('auth-required-link');
-                if (navItem) navItem.classList.add('auth-required-nav');
-            } else {
-                link.classList.remove('auth-required-link');
-                if (navItem) navItem.classList.remove('auth-required-nav');
-            }
-        });
-
-        const searchToggle = document.getElementById('searchToggle');
-        const notifToggle = document.getElementById('notificationToggle');
-        if (!loggedIn) {
-            if (searchToggle) searchToggle.style.display = 'none';
-            if (notifToggle) notifToggle.style.display = 'none';
-        } else {
-            if (searchToggle) searchToggle.style.display = '';
-            if (notifToggle) notifToggle.style.display = '';
-        }
+        updateNavForAuth();
     }
 
     // ============================================================
-    // 8. INITIALIZE EVERYTHING
+    // 11. INITIALIZE EVERYTHING
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         initAuth();
         requireAuth();
-        updateNavForAuth();
         initSlider();
         initSearch();
         initNotifications();
         initAddProductForm();
         loadDashboard();
         initDashboardControls();
+        
     });
 
 })();
